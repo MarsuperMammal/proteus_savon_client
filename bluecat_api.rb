@@ -5,15 +5,15 @@ require 'savon'
 
 module Bluecat
   class Api
-    wsdl_url = 'https://ipam-testlab.tycoelectronics.net:/Services/API?wsdl'
-    user = 'te0s0067'
-    pass = '/Thgq0*0wa'
 
     # Creates read and write methods for new attributes.
-    attr_accessor :auth_cookies, :client
-    def initialize
+    attr_accessor :auth_cookies, :client, :wsdl_url, :user, :pass
+    def initialize (wsdl_url, user, pass)
+      @wsdl_url = wsdl_url
+      @user = user
+      @pass = pass
       # Connect to Bluecat SOAP API
-      @client = Savon.client(wsdl: wsdl_url)
+      @client = Savon.client(wsdl: @wsdl_url)
       unless client.nil?
         login
       else
@@ -26,7 +26,7 @@ module Bluecat
       # Login using declared User
       # Block style invocation
       response = client.call(:login) do
-        message username: user, password: pass
+        message username: @user, password: @pass
       end
 
       # Auth cookies are required for subsequent method invocations
