@@ -71,6 +71,49 @@ module Bluecat
       end
     end
 
+    # Get list of configurations by Object Id
+    def get_configurations(start=0, count=10)
+      response = client.call(:get_entities) do |ctx|
+        ctx.cookies auth_cookies
+        ctx.message parentId: 0, type: 'Configuration', start: start, count: count
+      end
+      configurations = canonical_items(response.body[:get_entities_response])
+    end
+
+    # Get list of IPv4 Blocks
+    def get_ip4_blocks(parent_id, start=0, count=1)
+      response = client.call(:get_entities) do |ctx|
+        ctx.cookies auth_cookies
+        ctx.message parentId: parent_id, type: 'IP4Block', start: start, count: count
+      end
+      blocks = canonical_items(response.body[:get_entities_response])
+    end
+
+    # Get list of IPv4 Networks
+    def get_ip4_networks(parent_id, start=0, count=1)
+      response = client.call(:get_entities) do |ctx|
+        ctx.cookies auth_cookies
+        ctx.message parentId: parent_id, type: 'IP4Network', start: start, count: count
+      end
+      networks = canonical_items(response.body[:get_entities_response])
+    end
+
+    def get_dns_views(parent_id, start=0, count=1)
+      response = client.call(:get_entities) do |ctx|
+        ctx.cookies auth_cookies
+        ctx.message parentId: parent_id, type: 'View', start: start, count: count
+      end
+      views = canonical_items(response.body[:get_entities_response])
+    end
+
+    def get_dns_zones(parent_id, start=0, count=1)
+      response = client.call(:get_entities) do |ctx|
+        ctx.cookies auth_cookies
+        ctx.message parentId: parent_id, type: 'Zone', start: start, count: count
+      end
+      zones = canonical_items(response.body[:get_entities_response])
+    end
+
     # Checks if a system's hostname already exists in Proteus.
     def check_sys_host_record(fqdn, start=0, count=1)
       response = client.call(:get_host_records_by_hint) do |ctx|
@@ -81,14 +124,17 @@ module Bluecat
 
     # Checks if a system's Host Record has any linked records (link Alias Records)
     def check_sys_linked_records(fqdn, start=0, count=10)
-      entity_id = client.call(:get_host_records_by_hint) do |ctx|
+      host_id = client.call(:get_host_records_by_hint) do |ctx|
         ctx.cookies auth_cookies
         ctx.message start: start, count: count, options: "hint=#{fqdn}"
-        end
+      end
+      entity_id = host_id.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id].to_s
+
       response = client.call(:get_linked_entities) do |ctx|
         ctx.cookies auth_cookies
         ctx.message entityId: entity_id
-        end
+      end
+      response.hash
     end
 
     # Removes External DNS Identities and Linked Records
@@ -155,6 +201,17 @@ module Bluecat
       end
     end
 
+    # Get Linked Records
+
+    def diaper_duty(fqdn)
+      response = client.call(:get_host_records_by_hint) do |ctx|
+        ctx.cookies auth_cookies
+        ctx.message start: start, count: count, options: "hint=#{fqdn}"
+        entity_id = response.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id]
+
+
+      end
+    end
     def unserialize_properties(str)
       hash = {}
       str.split('|').each do |kvstr|
