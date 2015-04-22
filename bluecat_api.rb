@@ -167,19 +167,19 @@ module Bluecat
     end
 
     # Adds and externally hosted, resolvable DNS record to Proteus, to anchor internal Aliases.
-    def set_ext_record(ext_view_id, ext_record, view_id, ext_alias, ext_absolute_alias, ttl=180, properties)
-      ext_host_response = client.call(:addExternalHostRecord) do |ctx|
+    def set_ext_record(ext_view_id, ext_record, view_id, ext_alias, ext_absolute_alias, ttl=180, properties='')
+      ext_host_response = client.call(:add_external_host_record) do |ctx|
         ctx.cookies auth_cookies
         ctx.message view_id: ext_view_id, name: ext_record
       end
 
       ext_alias.each do
-        ext_alias_response = client.call(:addAliasRecord) do |ctx|
+        ext_alias_response = client.call(:add_alias_record) do |ctx|
           ctx.cookies auth_cookies
-          ctx.message viewId: view_id, absoluteName: ext_alias, linkedRecordName:ext_record, ttl: ttl, properties: properties
+          ctx.message viewId: view_id, absoluteName: ext_alias, linkedRecordName: ext_record, ttl: ttl, properties: properties
         end
         ext_absolute_alias.each do
-          ext_absolue_alias_response = client.call(:addAliasRecord) do |ctx|
+          ext_absolue_alias_response = client.call(:add_alias_record) do |ctx|
           ctx.cookies auth_cookies
           ctx.message viewId: view_id, absoluteName: ext_absolute_alias, linkedRecordName: ext_record, ttl: ttl, properties: "overrideNamingPolicy=true"
           end
@@ -188,17 +188,14 @@ module Bluecat
     end
 
     # Creates a systems Host Record and any Alias records it requires.
-    def set_sys_host_record(view_id, fqdn, ipaddress, absolute_alias, ttl=180)
-      sys_host_response = client.call(:addHostRecord) do |ctx|
+    def set_sys_host_record(view_id, fqdn, ipaddress, absolute_alias, ttl=180, properties='')
+      sys_host_response = client.call(:add_host_record) do |ctx|
         ctx.cookies auth_cookies
-        ctx.message viewId: view_id, absoluteName: fqdn, addresses: ipaddress, ttl: ttl, properties: ''
+        ctx.message viewId: view_id, absoluteName: fqdn, addresses: ipaddress, ttl: ttl, properties: properties
       end
-      sys_record = sys_host_response.hash[:envelope][:body][:add_host_record_response][:return]
-      absolute_alias.each do
-        absolute_alias_response = client.call(:addAliasRecord) do |ctx|
+      absolute_alias_response = client.call(:add_alias_record) do |ctx|
           ctx.cookies auth_cookies
-          ctx.message viewId: view_id, absoluteName: absolute_alias, linkedRecordName: sys_record, ttl: ttl, properties: "overrideNamingPolicy=true"
-        end
+          ctx.message viewId: view_id, absoluteName: absolute_alias, linkedRecordName: fqdn, ttl: ttl, properties: "overrideNamingPolicy=true"
       end
     end
 
