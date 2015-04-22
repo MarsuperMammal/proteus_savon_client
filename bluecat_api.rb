@@ -191,9 +191,9 @@ module Bluecat
     def set_sys_host_record(view_id, fqdn, ipaddress, absolute_alias, ttl=180)
       sys_host_response = client.call(:addHostRecord) do |ctx|
         ctx.cookies auth_cookies
-        ctx.message viewId: view_id, absoluteName: fqdn, addresses: ipaddress, ttl: ttl
+        ctx.message viewId: view_id, absoluteName: fqdn, addresses: ipaddress, ttl: ttl, properties: ''
       end
-      sys_record = set_host_response.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id]
+      sys_record = sys_host_response.hash[:envelope][:body][:add_host_record_response][:return]
       absolute_alias.each do
         absolute_alias_response = client.call(:addAliasRecord) do |ctx|
           ctx.cookies auth_cookies
