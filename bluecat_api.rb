@@ -188,17 +188,12 @@ module Bluecat
     end
 
     # Creates a systems Host Record and any Alias records it requires.
-    def set_sys_host_record(view_id, fqdn, ipaddress, sys_alias, sys_record, absolute_alias, properties, ttl=180)
+    def set_sys_host_record(view_id, fqdn, ipaddress, absolute_alias, ttl=180)
       sys_host_response = client.call(:addHostRecord) do |ctx|
         ctx.cookies auth_cookies
         ctx.message viewId: view_id, absoluteName: fqdn, addresses: ipaddress, ttl: ttl
       end
-      sys_alias.each do
-        sys_alias_response = client.call(:addAliasRecord) do |ctx|
-          ctx.cookies auth_cookies
-          ctx.message viewId: view_id, absoluteName: sys_alias, linkedRecordName: sys_record, ttl: ttl, properties: properties
-        end
-      end
+      sys_record = set_host_response.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id]
       absolute_alias.each do
         absolute_alias_response = client.call(:addAliasRecord) do |ctx|
           ctx.cookies auth_cookies
