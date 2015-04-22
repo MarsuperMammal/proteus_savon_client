@@ -2,7 +2,7 @@
 # gem install savon
 # See http://savonrb.com/version2/client.html
 require 'savon'
-require 'pry'
+require 'yaml'
 module Bluecat
   class Api
 
@@ -124,25 +124,29 @@ module Bluecat
 
     # Checks if a system's Host Record has any linked records (link Alias Records)
     def check_sys_linked_records(fqdn, start=0, count=10)
-      host_id = client.call(:get_host_records_by_hint) do |ctx|
+      host_record = client.call(:get_host_records_by_hint) do |ctx|
         ctx.cookies auth_cookies
         ctx.message start: start, count: count, options: "hint=#{fqdn}"
       end
-      entity_id = host_id.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id].to_s
-
-      response = client.call(:get_linked_entities) do |ctx|
-        ctx.cookies auth_cookies
-        ctx.message entityId: entity_id
-      end
-      response.hash
+      entity_props = host_record.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item]
+      entity_props.each do |line|
+        entity_id = line[:id]
+        linked_records = client.call(:get_linked_entities) do |ctx|
+          ctx.cookies auth_cookies
+          ctx.message entityId: entity_id, type: "RecordWithLink", start: start, count: count
+        end
+        p fqdn
+        p linked_records.hash
+        end
     end
 
     # Removes External DNS Identities and Linked Records
     def remove_ext_dns_identity(ext_record, ext_view_id, start=0, count=1)
-      ext_host_record_id = client.call(:get_entities_by_name) do |ctx|
+      ext_host_record = client.call(:get_entities_by_name) do |ctx|
         ctx.cookies auth_cookies
         ctx.message parentId: ext_view_id , name: ext_record, start: start, count: count
       end
+      ext_host_record_id = ext_host_record.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id]
       response = client.call(:delete) do |ctx|
         ctx.cookies auth_cookies
         ctx.message objectId: ext_host_record_id
@@ -151,10 +155,11 @@ module Bluecat
 
     # Removes a system's DNS Host Record, and all records linked to it's Host Record.
     def remove_sys_dns_identity(fqdn, start=0, count=1)
-      host_record_id = client.call(:get_host_records_by_hint) do |ctx|
+      host_record = client.call(:get_host_records_by_hint) do |ctx|
         ctx.cookies auth_cookies
         ctx.message start: start, count: count, options: "hint=#{fqdn}"
       end
+      host_record_id = host_record.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id]
       response =  client.call(:delete) do |ctx|
         ctx.cookies auth_cookies
         ctx.message objectId: host_record_id
@@ -167,6 +172,7 @@ module Bluecat
         ctx.cookies auth_cookies
         ctx.message view_id: ext_view_id, name: ext_record
       end
+
       ext_alias.each do
         ext_alias_response = client.call(:addAliasRecord) do |ctx|
           ctx.cookies auth_cookies
@@ -201,17 +207,6 @@ module Bluecat
       end
     end
 
-    # Get Linked Records
-
-    def diaper_duty(fqdn)
-      response = client.call(:get_host_records_by_hint) do |ctx|
-        ctx.cookies auth_cookies
-        ctx.message start: start, count: count, options: "hint=#{fqdn}"
-        entity_id = response.hash[:envelope][:body][:get_host_records_by_hint_response][:return][:item][:id]
-
-
-      end
-    end
     def unserialize_properties(str)
       hash = {}
       str.split('|').each do |kvstr|
