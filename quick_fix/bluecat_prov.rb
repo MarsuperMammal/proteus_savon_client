@@ -24,8 +24,8 @@ module Bluecat
     def login
       # Login using declared User
       # Block style invocation
-      user = 'te0s0067'
-      pass = '/Thgq0*0wa'
+      user = ''
+      pass = ''
       response = client.call(:login) do
         message username: user, password: pass
       end
